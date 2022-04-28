@@ -4,7 +4,7 @@ from datetime import datetime, date
 import itertools
 np.random.seed(1729)
 
-FILE_PATH = "wikiElec.txt"
+FILE_PATH = "data/wikiElec.txt"
 
 active_user_IDs = dict() ## contains every user ID
 outcomes_by_ID = dict() ## contains result info by ID: date, time, result
@@ -126,12 +126,16 @@ with open(FILE_PATH,errors='ignore') as data_file:
     wiki_edges = wiki_edges.sort_values(by=['Node min'])
 
     wiki_edges['Edge Probability'] = wiki_edges['Edge Weight'].apply(apply_probability)
-    wiki_edges.to_csv("wiki_test_edges.csv", encoding='utf-8', index=False)
+    wiki_edges.to_csv("data/wiki_test_edges.csv", encoding='utf-8', index=False)
 
     # input for hipmcl
-    wiki_edges[['Node min', 'Node max', 'Edge Probability']].to_csv('wikiElec.triples', header=False, sep='\t', index=False)
+    wiki_edges[['Node min', 'Node max', 'Edge Probability']].to_csv('data/wikiElec.triples', header=False, sep='\t', index=False)
+
+    with open('data/wikiElec.orig', 'w') as f:
+        f.write(f'{len(wiki_edges.index)}\n')
+    wiki_edges[['Node min', 'Node max', 'Edge Weight']].to_csv('data/wikiElec.orig', header=False, sep='\t', index=False, mode='a')
 
     users_tuple_list = [ (active_user_IDs[key], key) for key in active_user_IDs.keys()]
     wiki_users = pd.DataFrame(users_tuple_list, columns = ['Node ID', 'User ID'])
     wiki_users = wiki_users.sort_values(by=['Node ID'])
-    wiki_users.to_csv("wiki_test_users.csv", encoding='utf-8', index=False)
+    wiki_users.to_csv("data/wiki_test_users.csv", encoding='utf-8', index=False)
