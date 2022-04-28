@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, date
 import itertools
+np.random.seed(1729)
 
-
-FILE_PATH = "wikiElec.ElecBs3.txt"
+FILE_PATH = "wikiElec.txt"
 
 active_user_IDs = dict() ## contains every user ID
 outcomes_by_ID = dict() ## contains result info by ID: date, time, result
@@ -13,7 +13,12 @@ nominee_user_IDs = dict() ## dictionary containing nominated users and users who
 nominee_time = dict()
 earliest_vote = datetime(year = 2100, month = 1, day = 1, hour = 0, minute = 0, second = 0)
 
-### begin reading data, issue with special characters 
+### begin reading data, issue with special characters
+
+def apply_probability(vote):
+    mean = 0.5 + int(vote) * (0.4)
+    std = 0.001
+    return max(1e-5, np.random.normal(mean, std))
 
 with open(FILE_PATH, errors='ignore') as data_file:
     data_lines = data_file.readlines()
@@ -113,9 +118,11 @@ with open(FILE_PATH,errors='ignore') as data_file:
     wiki_edges = pd.DataFrame(list(zip(row_ind, col_ind, data)),
                     columns = ['From Node ID', 'To Node ID', 'Edge Weight'])
     wiki_edges = wiki_edges.sort_values(by=['From Node ID'])
+
+    wiki_edges['Edge Probability'] = wiki_edges['Edge Weight'].apply(apply_probability)
     wiki_edges.to_csv("wiki_test_edges.csv", encoding='utf-8', index=False)
 
     users_tuple_list = [ (active_user_IDs[key], key) for key in active_user_IDs.keys()]
     wiki_users = pd.DataFrame(users_tuple_list, columns = ['Node ID', 'User ID'])
-    wiki_users = wiki_users.sort_values(by=['Node ID'])    
+    wiki_users = wiki_users.sort_values(by=['Node ID'])
     wiki_users.to_csv("wiki_test_users.csv", encoding='utf-8', index=False)
