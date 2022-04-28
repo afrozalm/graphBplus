@@ -117,13 +117,19 @@ with open(FILE_PATH,errors='ignore') as data_file:
     #
     wiki_edges = pd.DataFrame(list(zip(row_ind, col_ind, data)),
                     columns = ['From Node ID', 'To Node ID', 'Edge Weight'])
-    wiki_edges = wiki_edges.sort_values(by=['From Node ID'])
+    wiki_edges = wiki_edges.astype({'From Node ID': int, 'To Node ID': int, 'Edge Weight': int})
+
+    wiki_edges['Node min'] = wiki_edges[['From Node ID', 'To Node ID']].min(axis=1)
+    wiki_edges['Node max'] = wiki_edges[['From Node ID', 'To Node ID']].max(axis=1)
+    wiki_edges = wiki_edges.groupby(['Node min', 'Node max']).first().reset_index()
+
+    wiki_edges = wiki_edges.sort_values(by=['Node min'])
 
     wiki_edges['Edge Probability'] = wiki_edges['Edge Weight'].apply(apply_probability)
     wiki_edges.to_csv("wiki_test_edges.csv", encoding='utf-8', index=False)
 
     # input for hipmcl
-    wiki_edges[['From Node ID', 'To Node ID', 'Edge Probability']].to_csv('wikiElec.triples', header=False, sep='\t')
+    wiki_edges[['Node min', 'Node max', 'Edge Probability']].to_csv('wikiElec.triples', header=False, sep='\t', index=False)
 
     users_tuple_list = [ (active_user_IDs[key], key) for key in active_user_IDs.keys()]
     wiki_users = pd.DataFrame(users_tuple_list, columns = ['Node ID', 'User ID'])
