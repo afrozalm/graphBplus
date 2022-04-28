@@ -122,6 +122,9 @@ with open(FILE_PATH,errors='ignore') as data_file:
     wiki_edges['Edge Probability'] = wiki_edges['Edge Weight'].apply(apply_probability)
     wiki_edges.to_csv("wiki_test_edges.csv", encoding='utf-8', index=False)
 
+    # input for hipmcl
+    wiki_edges[['From Node ID', 'To Node ID', 'Edge Probability']].to_csv('wikiElec.triples', header=False, sep='\t')
+
     users_tuple_list = [ (active_user_IDs[key], key) for key in active_user_IDs.keys()]
     wiki_users = pd.DataFrame(users_tuple_list, columns = ['Node ID', 'User ID'])
     wiki_users = wiki_users.sort_values(by=['Node ID'])
