@@ -44,6 +44,7 @@ https://cs.txstate.edu/~burtscher/research/graphBplus/.
 #include <sys/time.h>
 
 static const bool verify = false;  // set to false for better performance
+int frust_index = 0;
 
 struct EdgeInfo {
   int beg;  // beginning of range (shifted by 1) | is range inverted or not
@@ -466,7 +467,7 @@ static double processCycles(const Graph& g, const int* const label, EdgeInfo* co
   CPUTimer timer;
   timer.start();
 
-  #pragma omp parallel for default(none) shared(g, label, einfo, minus) schedule(dynamic, 64)
+  #pragma omp parallel for default(none) shared(g, label, einfo, minus, frust_index) schedule(dynamic, 64)
   for (int i = 0; i < g.nodes; i++) {
     const int target0 = label[i];
     const int target1 = target0 | 1;
@@ -484,7 +485,9 @@ static double processCycles(const Graph& g, const int* const label, EdgeInfo* co
           sum += einfo[k].end & 1;
           curr = g.nlist[k] >> 1;
         }
-        minus[j] = sum & 1;  // make cycle have even number of minuses
+        int flip = minus[j] = (sum & 1);  // make cycle have even number of minuses
+        #pragma omp critical
+        frust_index += flip;
       }
       j--;
     }
@@ -613,6 +616,7 @@ int main(int argc, char* argv[])
 {
   printf("graphB+ balancing code for signed social network graphs (%s)\n", __FILE__);
   printf("Copyright 2021 Texas State University\n");
+  printf("initial frust_index is %d\n", frust_index);
 
   CPUTimer overall;
   overall.start();
@@ -690,11 +694,13 @@ int main(int argc, char* argv[])
     fprintf(f, "%d,%.1f\n", g.origID[i], 100.0 * inCC[i] / iterations);
   }
   fprintf(f, "source node ID, destination node ID, percentage edge was in tree, percentage edge was negative\n");
+  int local_frust_index = 0;
   for (int v = 0; v < g.nodes; v++) {
     for (int j = g.nindex[v]; j < g.nindex[v + 1]; j++) {
       const int n = g.nlist[j] >> 1;
       if (v < n) {  // only print one copy of each edge (other copy does not have correct negCnt)
         fprintf(f, "%d,%d,%.1f,%.1f\n", g.origID[v], g.origID[n], 100.0 * inTree[j] / iterations, 100.0 * negCnt[j] / iterations);
+        local_frust_index += negCnt[j];
       }
     }
   }
@@ -714,4 +720,5 @@ int main(int argc, char* argv[])
   delete [] root;
 
   printf("overall runtime with I/O: %.6f s\n", overall.elapsed());
+  printf("frustration index is %d, local_frust_index is %d\n", frust_index / iterations, local_frust_index / iterations);
 }

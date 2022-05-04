@@ -126,7 +126,7 @@ with open(FILE_PATH,errors='ignore') as data_file:
     wiki_edges = wiki_edges.sort_values(by=['Node min'])
 
     wiki_edges['Edge Probability'] = wiki_edges['Edge Weight'].apply(apply_probability)
-    wiki_edges.to_csv("data/wiki_test_edges.csv", encoding='utf-8', index=False)
+    wiki_edges[['From Node ID', 'To Node ID', 'Edge Weight']].to_csv("data/wiki_test_edges.csv", encoding='utf-8', index=False)
 
     # input for hipmcl
     wiki_edges[['Node min', 'Node max', 'Edge Probability']].to_csv('data/wikiElec.triples', header=False, sep='\t', index=False)
