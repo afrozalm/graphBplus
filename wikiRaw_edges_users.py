@@ -132,7 +132,7 @@ with open(FILE_PATH,errors='ignore') as data_file:
     wiki_edges[['Node min', 'Node max', 'Edge Probability']].to_csv('data/wikiElec.triples', header=False, sep='\t', index=False)
 
     with open('data/wikiElec.orig', 'w') as f:
-        f.write(f'{len(wiki_edges.index)}\n')
+        f.write(f'{1+wiki_edges["Node max"].max()}\n')
     wiki_edges[['Node min', 'Node max', 'Edge Weight']].to_csv('data/wikiElec.orig', header=False, sep='\t', index=False, mode='a')
 
     users_tuple_list = [ (active_user_IDs[key], key) for key in active_user_IDs.keys()]
