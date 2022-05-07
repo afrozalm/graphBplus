@@ -88,7 +88,14 @@ def make_csv_name(filename: str) -> str:
         filename = 'amazon' + filename[1] + filename[2] +'_core5'
     elif filename[0] == "ratings":
         filename = 'Amazon_' + filename[-1]
-    return filename
+    return filename[0] + '_' + filename[1]
+
+
+def apply_probability(vote):
+    mean = 0.5 + int(vote) * (0.4)
+    std = 0.001
+    return max(1e-5, np.random.normal(mean, std))
+
 
 ### Main #############################################################################################
 if __name__ == '__main__':
@@ -100,7 +107,7 @@ if __name__ == '__main__':
             csv_name = make_csv_name(os.path.basename(argv[1]))
         elif argv[1].split('.')[-1] == 'gz':
             original_df = open_json(argv[1])
-            csv_name = make_csv_name(os.path.basename(argv[1]))  
+            csv_name = make_csv_name(os.path.basename(argv[1]))
     ### compute the avg_self values
     avg_reviewers = original_df.groupby(['reviewerID']).mean().sort_values(['reviewerID'])
     avg_products = original_df.groupby(['asin']).mean().sort_values(['asin'])
@@ -117,8 +124,23 @@ if __name__ == '__main__':
     edges_df = merge_dfs(grouped_products, grouped_reviewers, original_df)
     print(edges_df)
     print(users_df)
-    edges_df.to_csv(csv_name + '_edges2.csv', encoding = 'utf-8', index = False)
+    print("csv_name is ", csv_name)
+    edges_df.to_csv('data/' + csv_name + '_edges2.csv', encoding = 'utf-8', index = False)
     print("Wrote edges csv")
-    users_df.to_csv(csv_name + '_users.csv', encoding = 'utf-8', index = False)
+    users_df.to_csv('data/' + csv_name + '_users.csv', encoding = 'utf-8', index = False)
     print("Wrote users csv")
+
+    edges_df['Node min'] = edges_df[['From Node ID', 'To Node ID']].min(axis=1)
+    edges_df['Node max'] = edges_df[['From Node ID', 'To Node ID']].max(axis=1)
+    edges_df = edges_df.groupby(['Node min', 'Node max']).first().reset_index()
+
+    edges_df = edges_df.sort_values(by=['Node min'])
+
+    edges_df['Edge Probability'] = edges_df['Weight'].apply(apply_probability)
+    # input for hipmcl
+    edges_df[['Node min', 'Node max', 'Edge Probability']].to_csv(f'data/{csv_name}.triples', header=False, sep='\t', index=False)
+
+    with open(f'data/{csv_name}.orig', 'w') as f:
+        f.write(f'{1+edges_df["Node max"].max()}\n')
+    edges_df[['Node min', 'Node max', 'Weight']].to_csv(f'data/{csv_name}.orig', header=False, sep='\t', index=False, mode='a')
 
